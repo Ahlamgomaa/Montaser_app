@@ -43,7 +43,11 @@ class _HomePageState extends State<HomePage> {
   /// the object it was handed, so giving it the same completed future again
   /// would redraw the same failure.
   void _again() {
-    setState(() => _front = AppScope.shop.catalogue.front());
+    final next = AppScope.shop.catalogue.front();
+
+    setState(() {
+      _front = next;
+    });
   }
 
   @override

@@ -91,6 +91,7 @@ class _SignInPageState extends State<SignInPage> {
                             children: [
                               AppField(
                                 label: 'رقم الهاتف',
+                                hint: '01xxxxxxxxx',
                                 controller: _phone,
                                 glyph: Icons.phone_outlined,
                                 keyboard: TextInputType.phone,
@@ -109,6 +110,7 @@ class _SignInPageState extends State<SignInPage> {
                               Gap.h16,
                               AppField(
                                 label: 'كلمة المرور',
+                                hint: 'كلمة المرور الخاصة بحسابك',
                                 controller: _password,
                                 glyph: Icons.lock_outline_rounded,
                                 obscure: _hidden,
@@ -357,6 +359,9 @@ class _AlternativesState extends State<_Alternatives> {
     }
 
     if (session.isSignedIn) {
+      /* The basket that was put away with the account, brought back with it. */
+      AppScope.basket(context).load(force: true).catchError((Object _) {});
+
       canPop ? router.pop() : router.go(Path.account);
 
       return;

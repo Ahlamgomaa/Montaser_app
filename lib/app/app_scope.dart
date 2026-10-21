@@ -66,6 +66,16 @@ class _AppScopeState extends State<AppScope> {
       _session.tokenRejected();
       _basket.forget();
     };
+
+    /*
+     * The basket belongs to whoever is signed in, so it is fetched for the new
+     * account and dropped for the old one. A failed fetch is left on the store
+     * for the basket screen to show; nobody here is waiting on it.
+     */
+    _session.onSignedIn = () {
+      _basket.load(force: true).catchError((Object _) {});
+    };
+    _session.onSignedOut = _basket.forget;
   }
 
   @override

@@ -5,6 +5,7 @@ import '../../../app/app_scope.dart';
 import '../../../app/routes.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/theme/palette.dart';
+import '../../../core/widgets/empty_note.dart';
 import '../../../core/widgets/loader.dart';
 import '../../../data/models/catalogue.dart';
 
@@ -33,9 +34,18 @@ class _MakerStripState extends State<MakerStrip> {
         future: _makers,
         waiting: const LoadingNote(tall: false),
         isEmpty: (rows) => rows.isEmpty,
-        empty: const SizedBox.shrink(),
-        onRetry: () =>
-            setState(() => _makers = AppScope.shop.catalogue.makers()),
+        empty: const ShelfNote(
+          glyph: Icons.verified_outlined,
+          title: 'لا توجد ماركات بعد',
+          body: 'ستظهر الماركات هنا فور إضافتها.',
+        ),
+        onRetry: () {
+          final next = AppScope.shop.catalogue.makers();
+
+          setState(() {
+            _makers = next;
+          });
+        },
         builder: (context, makers) => ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: Metric.pagePad,

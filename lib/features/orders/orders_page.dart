@@ -36,7 +36,11 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   void _again() {
-    setState(() => _orders = AppScope.shop.orders.mine());
+    final next = AppScope.shop.orders.mine();
+
+    setState(() {
+      _orders = next;
+    });
   }
 
   @override

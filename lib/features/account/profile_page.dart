@@ -62,6 +62,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   AppField(
                     label: 'الاسم',
+                    hint: 'اسمك كما تحب أن نناديك',
                     controller: _name,
                     glyph: Icons.person_outline_rounded,
                     validator: (value) => (value ?? '').trim().length < 3
@@ -82,6 +83,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   AppField(
                     label: 'البريد الإلكتروني',
+                    hint: 'name@example.com',
                     controller: _email,
                     optional: true,
                     glyph: Icons.mail_outline_rounded,
@@ -102,6 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Gap.h16,
                   AppField(
                     label: 'اسم الشركة أو الورشة',
+                    hint: 'إن كنت تشتري لشركة أو ورشة',
                     controller: _company,
                     optional: true,
                     glyph: Icons.storefront_outlined,

@@ -41,7 +41,11 @@ class _PartPageState extends State<PartPage> {
   }
 
   void _again() {
-    setState(() => _part = AppScope.shop.catalogue.part(widget.slug));
+    final next = AppScope.shop.catalogue.part(widget.slug);
+
+    setState(() {
+      _part = next;
+    });
   }
 
   @override

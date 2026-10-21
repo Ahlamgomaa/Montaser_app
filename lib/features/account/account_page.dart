@@ -41,7 +41,7 @@ class AccountPage extends StatelessWidget {
             ],
           ),
           Transform.translate(
-            offset: const Offset(0, -18),
+            offset: const Offset(0, -12),
             child: _Card(shopper: shopper),
           ),
 
@@ -144,7 +144,7 @@ class AccountPage extends StatelessWidget {
               ),
             ),
           ),
-          Gap.h16,
+          Gap.h12,
           Center(
             child: Text(
               'إصدار ١٫٠٫٠',
@@ -153,6 +153,7 @@ class AccountPage extends StatelessWidget {
               ),
             ),
           ),
+          Gap.h8,
         ],
       ),
     );

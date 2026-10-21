@@ -110,6 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           children: [
                             AppField(
                               label: 'الاسم',
+                              hint: 'اسمك الكامل',
                               controller: _name,
                               glyph: Icons.person_outline_rounded,
                               textInputAction: TextInputAction.next,
@@ -121,6 +122,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             Gap.h16,
                             AppField(
                               label: 'رقم الهاتف',
+                              hint: '01xxxxxxxxx',
                               controller: _phone,
                               glyph: Icons.phone_outlined,
                               keyboard: TextInputType.phone,
@@ -161,6 +163,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             Gap.h16,
                             AppField(
                               label: 'كلمة المرور',
+                              hint: 'اختر كلمة مرور',
                               controller: _password,
                               glyph: Icons.lock_outline_rounded,
                               obscure: _hidden,
@@ -186,6 +189,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             Gap.h16,
                             AppField(
                               label: 'البريد الإلكتروني',
+                              hint: 'name@example.com',
                               controller: _email,
                               optional: true,
                               glyph: Icons.mail_outline_rounded,
@@ -206,6 +210,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             Gap.h16,
                             AppField(
                               label: 'اسم الشركة أو الورشة',
+                              hint: 'إن كنت تشتري لشركة أو ورشة',
                               controller: _company,
                               optional: true,
                               glyph: Icons.storefront_outlined,

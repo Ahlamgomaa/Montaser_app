@@ -6,6 +6,7 @@ import '../../../app/routes.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/theme/glyphs.dart';
 import '../../../core/theme/palette.dart';
+import '../../../core/widgets/empty_note.dart';
 import '../../../core/widgets/loader.dart';
 import '../../../data/models/catalogue.dart';
 
@@ -41,14 +42,23 @@ class _AisleStripState extends State<AisleStrip> {
         waiting: const LoadingNote(tall: false),
         isEmpty: (rows) => rows.isEmpty,
         /*
-         * Nothing at all rather than a message. A shop with no departments is
-         * a shop still being set up, and the customer has the rest of the page
-         * to look at — an error box in the middle of it would be the loudest
-         * thing on the screen and the least useful.
+         * One quiet line rather than a full empty state. A shop with no
+         * departments is a shop still being set up, and the customer has the
+         * rest of the page to look at — but a heading over a blank strip reads
+         * as a row that failed to load.
          */
-        empty: const SizedBox.shrink(),
-        onRetry: () =>
-            setState(() => _aisles = AppScope.shop.catalogue.aisles()),
+        empty: const ShelfNote(
+          glyph: Icons.grid_view_rounded,
+          title: 'لا توجد أقسام بعد',
+          body: 'ستظهر الأقسام هنا فور إضافتها.',
+        ),
+        onRetry: () {
+          final next = AppScope.shop.catalogue.aisles();
+
+          setState(() {
+            _aisles = next;
+          });
+        },
         builder: (context, aisles) => ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: Metric.pagePad,

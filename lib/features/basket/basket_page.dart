@@ -11,6 +11,7 @@ import '../../core/widgets/page_crown.dart';
 import '../../core/theme/glyphs.dart';
 import '../../core/theme/palette.dart';
 import '../../core/widgets/empty_note.dart';
+import '../../core/widgets/loader.dart';
 import '../../core/widgets/part_artwork.dart';
 import '../../core/widgets/quantity_stepper.dart';
 import '../../data/models/basket.dart';
@@ -27,56 +28,99 @@ class BasketPage extends StatelessWidget {
     final store = AppScope.basketOf(context);
     final basket = store.basket;
 
+    final refresh = CrownAction(
+      glyph: Icons.refresh_rounded,
+      onTap: () => _refresh(context, store),
+    );
+
     return Scaffold(
-      body: basket.isEmpty
-          ? ListView(
-              children: [
-                const PageCrown(
-                  title: 'السلة',
-                  lede: 'ما اخترته قبل إتمام الطلب.',
-                  showBack: false,
-                ),
-                EmptyNote(
-                  glyph: Icons.shopping_bag_outlined,
-                  title: 'سلتك فارغة',
-                  body: 'أضف ما تحتاجه من القطع وسنجهّزه لك.',
-                  actionLabel: 'تصفّح القطع',
-                  onAction: () => context.go(Path.home),
-                ),
-              ],
-            )
-          : ListView(
-              padding: const EdgeInsets.only(bottom: Metric.bottomRest),
-              children: [
-                PageCrown(
-                  title: 'السلة',
-                  lede: '${basket.pieces} قطعة',
-                  showBack: false,
-                  actions: [
-                    CrownAction(
-                      glyph: Icons.delete_outline_rounded,
-                      onTap: () => _confirmClear(context, store),
-                    ),
-                  ],
-                ),
-                _FreeDeliveryBar(store: store),
-                for (final line in basket.lines)
-                  _Line(line: line, store: store),
-                Gap.h16,
-                const Padding(padding: Metric.pagePad, child: CouponBox()),
-                Gap.h16,
-                Padding(
-                  padding: Metric.pagePad,
-                  child: TotalsCard(
-                    totals: basket.totals,
-                    coupon: basket.coupon?.code,
-                    shippingKnown: basket.shipping != null,
+      body: RefreshIndicator(
+        onRefresh: () => _refresh(context, store),
+        child: basket.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  PageCrown(
+                    title: 'السلة',
+                    lede: 'ما اخترته قبل إتمام الطلب.',
+                    showBack: false,
+                    actions: [refresh],
                   ),
-                ),
-              ],
-            ),
+                  if (store.isBusy) const LinearProgressIndicator(minHeight: 2),
+                  /*
+                 * A basket that could not be read is not an empty one. Saying
+                 * "your basket is empty" over a failed call would tell somebody
+                 * with parts waiting on the server that they have none.
+                 */
+                  if (store.fault != null && !store.isBusy)
+                    FailureNote(
+                      fault: store.fault,
+                      onRetry: () => _refresh(context, store),
+                    )
+                  else
+                    EmptyNote(
+                      glyph: Icons.shopping_bag_outlined,
+                      title: 'سلتك فارغة',
+                      body: 'أضف ما تحتاجه من القطع وسنجهّزه لك.',
+                      actionLabel: 'تصفّح القطع',
+                      onAction: () => context.go(Path.home),
+                    ),
+                ],
+              )
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: Metric.bottomRest),
+                children: [
+                  PageCrown(
+                    title: 'السلة',
+                    lede: '${basket.pieces} قطعة',
+                    showBack: false,
+                    actions: [
+                      refresh,
+                      CrownAction(
+                        glyph: Icons.delete_outline_rounded,
+                        onTap: () => _confirmClear(context, store),
+                      ),
+                    ],
+                  ),
+                  if (store.isBusy) const LinearProgressIndicator(minHeight: 2),
+                  _FreeDeliveryBar(store: store),
+                  for (final line in basket.lines)
+                    _Line(line: line, store: store),
+                  Gap.h16,
+                  const Padding(padding: Metric.pagePad, child: CouponBox()),
+                  Gap.h16,
+                  Padding(
+                    padding: Metric.pagePad,
+                    child: TotalsCard(
+                      totals: basket.totals,
+                      coupon: basket.coupon?.code,
+                      shippingKnown: basket.shipping != null,
+                    ),
+                  ),
+                ],
+              ),
+      ),
       bottomNavigationBar: basket.isEmpty ? null : _CheckoutBar(basket: basket),
     );
+  }
+
+  /// Read the basket again from the server.
+  ///
+  /// Ignored while another call is in flight — the bar under the crown is
+  /// already saying so, and a second read would only race the first.
+  static Future<void> _refresh(BuildContext context, BasketStore store) async {
+    if (store.isBusy) {
+      return;
+    }
+
+    try {
+      await store.load(force: true);
+    } on ApiFailure catch (fault) {
+      if (context.mounted) {
+        sayFailure(context, fault);
+      }
+    }
   }
 
   Future<void> _confirmClear(BuildContext context, BasketStore store) async {
