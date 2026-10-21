@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +6,6 @@ import '../../data/store/fingerprint_lock.dart';
 import '../../app/routes.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/theme/palette.dart';
-import '../../core/widgets/brand_mark.dart';
 import '../../data/api/api_config.dart';
 import '../../data/api/token_store.dart';
 
@@ -32,6 +29,16 @@ class SplashPage extends StatefulWidget {
   /// splash that flashes past in 200ms reads as a glitch. On a slow one the
   /// waking takes longer and the splash simply waits for it.
   static const _atLeast = Duration(milliseconds: 1400);
+
+  /// The logo, transparent, shared with the system splash in front of this.
+  static const _mark = 'assets/brand/splash.png';
+
+  /// The same, with the navy lettering in orange: on the dark page the navy
+  /// all but disappeared.
+  static const _markDark = 'assets/brand/splash_dark.png';
+
+  /// Wide enough to read the name under the mark on a small phone.
+  static const _markSize = 200.0;
 
   @override
   State<SplashPage> createState() => _SplashPageState();
@@ -141,157 +148,68 @@ class _SplashPageState extends State<SplashPage>
   Widget build(BuildContext context) {
     final type = context.type;
 
+    /*
+     * The shop's own mark, on the page colour of whichever theme the phone is
+     * in. The picture is transparent, so it sits on light and dark alike, and
+     * the colours here are the ones the system splash in front of this uses —
+     * opening the app is one picture that settles, not two that swap.
+     */
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Palette.brandLift, Palette.brand, Palette.brandDeep],
-          ),
-        ),
-        child: Stack(
-          children: [
-            const Positioned(top: -80, right: -60, child: _Halo(size: 260)),
-            const Positioned(bottom: -110, left: -70, child: _Halo(size: 320)),
-            const Positioned.fill(child: CustomPaint(painter: _FlurryPainter())),
-
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ScaleTransition(
-                    scale: Tween(begin: 0.72, end: 1.0).animate(_rise),
-                    child: FadeTransition(
-                      opacity: _rise,
-                      child: Container(
-                        padding: const EdgeInsets.all(Gap.xl),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.14),
-                        ),
-                        child: const BrandMark(size: 84, plain: true),
-                      ),
-                    ),
-                  ),
-                  Gap.h32,
-                  FadeTransition(
-                    opacity: _settle,
-                    child: Text(
-                      'منتصر',
-                      style: type.displaySmall?.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            PositionedDirectional(
-              start: 0,
-              end: 0,
-              bottom: Gap.huge,
+      body: Stack(
+        children: [
+          Center(
+            child: ScaleTransition(
+              scale: Tween(begin: 0.72, end: 1.0).animate(_rise),
               child: FadeTransition(
-                opacity: _settle,
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    Gap.h16,
-                    /*
-                     * Said only when it is true. An app that has not been given
-                     * a server address will fail on its first call, and saying
-                     * so here — where somebody is already looking — is better
-                     * than four screens each reporting the same thing as their
-                     * own failure.
-                     */
-                    if (!ApiConfig.instance.isConfigured)
-                      Text(
-                        'لم يُضبط عنوان السيرفر بعد',
-                        style: type.labelSmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
-                  ],
+                opacity: _rise,
+                child: Image.asset(
+                  Theme.of(context).brightness == Brightness.dark
+                      ? SplashPage._markDark
+                      : SplashPage._mark,
+                  width: SplashPage._markSize,
+                  semanticLabel: 'مؤسسة منتصر',
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            bottom: Gap.huge,
+            child: FadeTransition(
+              opacity: _settle,
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: context.scheme.primary,
+                    ),
+                  ),
+                  Gap.h16,
+                  /*
+                   * Said only when it is true. An app that has not been given
+                   * a server address will fail on its first call, and saying
+                   * so here — where somebody is already looking — is better
+                   * than four screens each reporting the same thing as their
+                   * own failure.
+                   */
+                  if (!ApiConfig.instance.isConfigured)
+                    Text(
+                      'لم يُضبط عنوان السيرفر بعد',
+                      style: type.labelSmall?.copyWith(
+                        color: context.palette.inkFaint,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-class _Halo extends StatelessWidget {
-  const _Halo({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
-          width: 32,
-        ),
-      ),
-    );
-  }
-}
-
-/// A scatter of small flakes across the background.
-///
-/// Fixed positions rather than random ones: this is the first thing anybody
-/// sees, and it should look the same every time it is opened. A different
-/// arrangement on each launch reads as noise rather than as a design.
-class _FlurryPainter extends CustomPainter {
-  const _FlurryPainter();
-
-  /// Fractions of the screen, so the scatter follows any size.
-  static const _flakes = <(double, double, double)>[
-    (0.14, 0.18, 9),
-    (0.82, 0.12, 6),
-    (0.26, 0.78, 7),
-    (0.72, 0.86, 10),
-    (0.90, 0.52, 5),
-    (0.08, 0.58, 6),
-    (0.55, 0.08, 5),
-    (0.40, 0.92, 6),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final pen = Paint()
-      ..color = Colors.white.withValues(alpha: 0.22)
-      ..strokeWidth = 1.4
-      ..strokeCap = StrokeCap.round;
-
-    for (final (x, y, reach) in _flakes) {
-      final middle = Offset(size.width * x, size.height * y);
-
-      for (var spoke = 0; spoke < 3; spoke++) {
-        final turn = spoke * math.pi / 3;
-        final arm = Offset(math.cos(turn), math.sin(turn)) * reach;
-
-        canvas.drawLine(middle - arm, middle + arm, pen);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_FlurryPainter old) => false;
 }
