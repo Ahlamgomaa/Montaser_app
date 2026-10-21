@@ -39,7 +39,11 @@ class _OrderPageState extends State<OrderPage> {
   }
 
   void _again() {
-    setState(() => _order = AppScope.shop.orders.one(widget.id));
+    final next = AppScope.shop.orders.one(widget.id);
+
+    setState(() {
+      _order = next;
+    });
   }
 
   @override

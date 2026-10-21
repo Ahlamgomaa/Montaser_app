@@ -84,3 +84,72 @@ class EmptyNote extends StatelessWidget {
     );
   }
 }
+
+/// The same news, small enough to sit inside a strip.
+///
+/// For the rows on the shop front. A full [EmptyNote] is taller than the strip
+/// it would stand in for; a blank strip under a heading reads as something that
+/// failed to load. This is one line — a ring, a title and a sentence — that says
+/// the shop simply has nothing here yet.
+class ShelfNote extends StatelessWidget {
+  const ShelfNote({
+    required this.glyph,
+    required this.title,
+    required this.body,
+    super.key,
+  });
+
+  final IconData glyph;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.palette;
+    final type = context.type;
+
+    return Padding(
+      padding: Metric.pagePad,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(Gap.md),
+          decoration: BoxDecoration(
+            color: context.scheme.surface,
+            borderRadius: Corner.rLg,
+            border: Border.all(color: colors.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.line, width: 1.5),
+                ),
+                child: Icon(glyph, size: 20, color: colors.inkFaint),
+              ),
+              Gap.w12,
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: type.labelMedium),
+                    Gap.h4,
+                    Text(
+                      body,
+                      style: type.labelSmall?.copyWith(color: colors.inkFaint),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

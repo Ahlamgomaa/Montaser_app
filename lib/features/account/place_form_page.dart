@@ -114,6 +114,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                   Gap.h16,
                   AppField(
                     label: 'اسم المستلم',
+                    hint: 'الاسم كما سيسأل عنه المندوب',
                     controller: _recipient,
                     glyph: Icons.person_outline_rounded,
                     validator: _required,
@@ -121,6 +122,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                   Gap.h16,
                   AppField(
                     label: 'رقم هاتف المستلم',
+                    hint: '01xxxxxxxxx',
                     controller: _phone,
                     glyph: Icons.phone_outlined,
                     keyboard: TextInputType.phone,
@@ -154,6 +156,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                   Gap.h16,
                   AppField(
                     label: 'المدينة أو المركز',
+                    hint: 'مثلاً: مدينة نصر',
                     controller: _city,
                     glyph: Icons.location_city_outlined,
                     validator: _required,
@@ -161,6 +164,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                   Gap.h16,
                   AppField(
                     label: 'الشارع',
+                    hint: 'اسم الشارع ورقمه إن وُجد',
                     controller: _street,
                     glyph: Icons.signpost_outlined,
                     validator: _required,
@@ -171,6 +175,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                       Expanded(
                         child: AppField(
                           label: 'رقم العمارة',
+                          hint: 'مثلاً: 12',
                           controller: _building,
                           optional: true,
                         ),
@@ -179,6 +184,7 @@ class _PlaceFormPageState extends State<PlaceFormPage> {
                       Expanded(
                         child: AppField(
                           label: 'رقم الشقة',
+                          hint: 'مثلاً: 4',
                           controller: _flat,
                           optional: true,
                         ),

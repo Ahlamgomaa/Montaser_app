@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../core/theme/dimens.dart';
+import '../../core/widgets/empty_note.dart';
 import '../../core/widgets/loader.dart';
 import '../../core/widgets/page_crown.dart';
 import '../../data/models/catalogue.dart';
@@ -35,7 +36,11 @@ class _AislesPageState extends State<AislesPage> {
   /// the object it was handed, so handing back the same completed future would
   /// redraw the same failure.
   void _again() {
-    setState(() => _aisles = AppScope.shop.catalogue.aisles());
+    final next = AppScope.shop.catalogue.aisles();
+
+    setState(() {
+      _aisles = next;
+    });
   }
 
   @override
@@ -46,9 +51,42 @@ class _AislesPageState extends State<AislesPage> {
         child: Loader<List<Aisle>>(
           future: _aisles,
           onRetry: _again,
+          isEmpty: (aisles) => aisles.isEmpty,
+          empty: _None(onRetry: _again),
           builder: (context, aisles) => _Grid(aisles: aisles),
         ),
       ),
+    );
+  }
+}
+
+/// No departments yet — a shop still being set up, not a failure.
+///
+/// The crown stays, so the page is still recognisably the departments page,
+/// and the list can still be pulled to ask again.
+class _None extends StatelessWidget {
+  const _None({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const PageCrown(
+          title: 'الأقسام',
+          lede: 'كل ما تحتاجه، مرتّباً كما في المخزن.',
+          showBack: false,
+        ),
+        EmptyNote(
+          glyph: Icons.grid_view_rounded,
+          title: 'لا توجد أقسام بعد',
+          body: 'لم يُضِف المتجر أقساماً حتى الآن. اسحب للأسفل للتحديث.',
+          actionLabel: 'تحديث',
+          onAction: onRetry,
+        ),
+      ],
     );
   }
 }

@@ -72,6 +72,7 @@ class _PasswordSheetState extends State<PasswordSheet> {
 
             AppField(
               label: 'كلمة المرور الحالية',
+              hint: 'التي تدخل بها الآن',
               controller: _current,
               glyph: Icons.lock_outline_rounded,
               obscure: true,
@@ -79,6 +80,7 @@ class _PasswordSheetState extends State<PasswordSheet> {
             Gap.h12,
             AppField(
               label: 'كلمة المرور الجديدة',
+              hint: 'ثمانية أحرف على الأقل',
               controller: _next,
               glyph: Icons.lock_reset_rounded,
               obscure: true,
@@ -87,6 +89,7 @@ class _PasswordSheetState extends State<PasswordSheet> {
             Gap.h12,
             AppField(
               label: 'أعد كتابتها',
+              hint: 'اكتب الكلمة الجديدة مرة أخرى',
               controller: _again,
               glyph: Icons.lock_reset_rounded,
               obscure: true,

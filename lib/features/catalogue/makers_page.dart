@@ -29,7 +29,11 @@ class _MakersPageState extends State<MakersPage> {
   }
 
   void _again() {
-    setState(() => _makers = AppScope.shop.catalogue.makers());
+    final next = AppScope.shop.catalogue.makers();
+
+    setState(() {
+      _makers = next;
+    });
   }
 
   @override

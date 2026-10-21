@@ -71,6 +71,19 @@ class SessionStore extends ChangeNotifier {
   /// Whether the last call was refused, so a screen can offer to sign in again.
   bool get wasRefused => _refused;
 
+  /// Called after somebody signs in or creates an account, and after they sign
+  /// out.
+  ///
+  /// Set once by [AppScope], for the things that belong to the account but are
+  /// not kept here — the basket, chiefly. Without them a basket fetched for
+  /// nobody stays empty after signing in, and one fetched for the last person
+  /// stays on screen after they sign out, until the app is restarted.
+  ///
+  /// Not called on waking or on [lockAway]: the splash decides those, after the
+  /// fingerprint has had its say.
+  VoidCallback? onSignedIn;
+  VoidCallback? onSignedOut;
+
   /// Put the account away without ending it.
   ///
   /// For a handset whose fingerprint was not given. The token is untouched and
@@ -141,6 +154,7 @@ class SessionStore extends ChangeNotifier {
     _refused = false;
     await _loadOwn();
     notifyListeners();
+    onSignedIn?.call();
 
     return _shopper!;
   }
@@ -164,6 +178,7 @@ class SessionStore extends ChangeNotifier {
 
     await _loadOwn();
     notifyListeners();
+    onSignedIn?.call();
 
     return _shopper!;
   }
@@ -174,6 +189,7 @@ class SessionStore extends ChangeNotifier {
     } finally {
       _forget();
       notifyListeners();
+      onSignedOut?.call();
     }
   }
 
@@ -188,6 +204,7 @@ class SessionStore extends ChangeNotifier {
     } finally {
       _forget();
       notifyListeners();
+      onSignedOut?.call();
     }
   }
 

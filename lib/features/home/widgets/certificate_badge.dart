@@ -38,62 +38,71 @@ class CertificateBadge extends StatelessWidget {
      */
     final uploaded = identity.certificateUrl;
 
+    /*
+     * The mark runs edge to edge at its own proportions. Held at a fixed 84
+     * pixels and fitted inside the card, it sat as a small picture between two
+     * bands of empty card — which made a guarantee look like a thumbnail.
+     */
+    const bundled = Image(
+      image: AssetImage(_bundled),
+      fit: BoxFit.cover,
+      width: double.infinity,
+    );
+
     return Container(
       margin: const EdgeInsets.fromLTRB(Gap.lg, Gap.md, Gap.lg, 0),
-      padding: const EdgeInsets.all(Gap.md),
-      decoration: BoxDecoration(
-        color: context.scheme.surface,
+      clipBehavior: Clip.antiAlias,
+      foregroundDecoration: BoxDecoration(
         borderRadius: Corner.rLg,
         border: Border.all(color: colors.line),
       ),
+      decoration: BoxDecoration(
+        color: context.scheme.surface,
+        borderRadius: Corner.rLg,
+      ),
       child: Column(
         children: [
-          ClipRRect(
-            borderRadius: Corner.rMd,
+          AspectRatio(
+            /*
+             * The bundled mark's own shape. Given up front so the page does not
+             * jump when an uploaded one loads.
+             */
+            aspectRatio: _shape,
             child: uploaded == null || uploaded.isEmpty
-                ? Image.asset(
-                    _bundled,
-                    fit: BoxFit.contain,
-                    height: 84,
-                    width: double.infinity,
-                  )
+                ? bundled
                 : Image.network(
                     uploaded,
+                    /*
+                     * Contained rather than cropped: an uploaded mark may be a
+                     * different shape, and cutting the edge off a certification
+                     * is cutting off what it says.
+                     */
                     fit: BoxFit.contain,
-              /*
-               * Wide and short, which is the shape these marks come in. Given a
-               * fixed height so the page does not jump when it loads.
-               */
-                    height: 84,
                     width: double.infinity,
                     /*
                      * Back to the bundled copy rather than to a broken-picture
                      * icon: a torn image where a guarantee should be says the
                      * opposite of what this is here to say.
                      */
-                    errorBuilder: (context, error, stack) =>
-                        Image.asset(
-                          _bundled,
-                          fit: BoxFit.contain,
-                          height: 84,
-                          width: double.infinity,
-                        ),
+                    errorBuilder: (context, error, stack) => bundled,
                     loadingBuilder: (context, child, progress) =>
-                        progress == null
-                        ? child
-                        : const SizedBox(height: 84),
+                        progress == null ? child : const SizedBox.shrink(),
                   ),
           ),
-          if ((identity.certificateNote ?? '').isNotEmpty) ...[
-            Gap.h8,
-            Text(
-              identity.certificateNote!,
-              textAlign: TextAlign.center,
-              style: context.type.bodySmall?.copyWith(color: colors.inkSoft),
+          if ((identity.certificateNote ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(Gap.md),
+              child: Text(
+                identity.certificateNote!,
+                textAlign: TextAlign.center,
+                style: context.type.bodySmall?.copyWith(color: colors.inkSoft),
+              ),
             ),
-          ],
         ],
       ),
     );
   }
+
+  /// Width over height of the bundled mark, 1309 × 584.
+  static const _shape = 1309 / 584;
 }

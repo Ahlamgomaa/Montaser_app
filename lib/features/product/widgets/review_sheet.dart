@@ -92,6 +92,7 @@ class _ReviewSheetState extends State<ReviewSheet> {
             Gap.h8,
             AppField(
               label: 'عنوان',
+              hint: 'مثلاً: مطابقة تماماً للأصلية',
               optional: true,
               controller: _title,
               glyph: Icons.title_rounded,
@@ -99,6 +100,7 @@ class _ReviewSheetState extends State<ReviewSheet> {
             Gap.h12,
             AppField(
               label: 'رأيك في القطعة',
+              hint: 'كيف كانت الجودة والتركيب؟',
               controller: _body,
               glyph: Icons.rate_review_outlined,
               lines: 4,

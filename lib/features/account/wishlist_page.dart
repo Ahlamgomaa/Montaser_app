@@ -28,25 +28,52 @@ class WishlistPage extends StatefulWidget {
 class _WishlistPageState extends State<WishlistPage> {
   late Future<List<Part>> _kept;
 
+  /// Whose list this is, as of the last fetch.
+  ///
+  /// The tab is kept alive between visits, so a list fetched before somebody
+  /// signed in — or for somebody who has since signed out — would otherwise
+  /// stay on screen until the app was restarted.
+  int? _for;
+  bool _asked = false;
+
   @override
-  void initState() {
-    super.initState();
-    _kept = AppScope.shop.account.wishlist();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final shopper = AppScope.sessionOf(context).shopper?.id;
+
+    if (!_asked || shopper != _for) {
+      _asked = true;
+      _for = shopper;
+      _kept = AppScope.shop.account.wishlist();
+    }
   }
 
-  void _again() {
-    setState(() => _kept = AppScope.shop.account.wishlist());
+  /// Ask again, and hand back the call so a pull can wait for it.
+  ///
+  /// The new future is made outside [setState]: an arrow callback that assigns
+  /// a future returns that future, and [setState] refuses a callback that
+  /// returns one.
+  Future<void> _again() {
+    final next = AppScope.shop.account.wishlist();
+
+    setState(() {
+      _kept = next;
+    });
+
+    return next.then((_) {}, onError: (_) {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () async => _again(),
+        onRefresh: _again,
         child: Loader<List<Part>>(
           future: _kept,
           onRetry: _again,
-          builder: (context, kept) => _Kept(kept: kept, onChanged: _again),
+          builder: (context, kept) =>
+              _Kept(kept: kept, onChanged: _again, onRefresh: _again),
         ),
       ),
     );
@@ -55,12 +82,19 @@ class _WishlistPageState extends State<WishlistPage> {
 
 /// The saved parts, once they have arrived.
 class _Kept extends StatelessWidget {
-  const _Kept({required this.kept, required this.onChanged});
+  const _Kept({
+    required this.kept,
+    required this.onChanged,
+    required this.onRefresh,
+  });
 
   final List<Part> kept;
 
   /// Called when a part stops being kept, so the list is asked for again.
   final VoidCallback onChanged;
+
+  /// The crown's refresh button.
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +110,9 @@ class _Kept extends StatelessWidget {
                 ? 'ما تحفظه للرجوع إليه لاحقاً.'
                 : '${kept.length} قطعة محفوظة',
             showBack: false,
+            actions: [
+              CrownAction(glyph: Icons.refresh_rounded, onTap: onRefresh),
+            ],
           ),
         ),
         if (kept.isEmpty)
