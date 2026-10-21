@@ -4,6 +4,7 @@ import '../data/api/api_config.dart';
 import '../data/api/token_store.dart';
 import '../data/repositories/repositories.dart';
 import '../data/store/basket_store.dart';
+import '../data/store/fingerprint_lock.dart';
 import '../data/store/session_store.dart';
 
 /// The stores, and the repositories under them, reachable from anywhere below.
@@ -40,13 +41,31 @@ class AppScope extends StatefulWidget {
   /// does not hold on to — a page of the catalogue, one order, one part.
   static Repositories get shop => Repositories.instance;
 
+  /// Whether the session is still waking, and whose it is.
+  ///
+  /// For the router, which decides who may open which screen and has to hear
+  /// when that answer changes — a sign-in, a sign-out, the fingerprint lock.
+  /// A value rather than the session itself, so it speaks only when one of
+  /// those two things moves and not on every heart that is tapped.
+  static final account = ValueNotifier<(bool, int?)>((true, null));
+
   @override
   State<AppScope> createState() => _AppScopeState();
 }
 
-class _AppScopeState extends State<AppScope> {
+class _AppScopeState extends State<AppScope> with WidgetsBindingObserver {
   late final SessionStore _session;
   late final BasketStore _basket;
+
+  /// How long the app may sit in the background before the lock asks again.
+  ///
+  /// Long enough that answering a call or checking a message does not mean a
+  /// fingerprint every time; short enough that a phone left on a counter does
+  /// not stay open on somebody's account.
+  static const _grace = Duration(minutes: 5);
+
+  DateTime? _away;
+  bool _asking = false;
 
   @override
   void initState() {
@@ -76,10 +95,64 @@ class _AppScopeState extends State<AppScope> {
       _basket.load(force: true).catchError((Object _) {});
     };
     _session.onSignedOut = _basket.forget;
+
+    _session.addListener(_tellRouter);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _tellRouter() {
+    AppScope.account.value = (_session.isWaking, _session.shopper?.id);
+  }
+
+  /*
+   * The lock asked only when the app was launched, so a phone left open in
+   * the background stayed open for as long as the system kept the app alive —
+   * days, on most handsets. Coming back after [_grace] asks again.
+   */
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _away ??= DateTime.now();
+
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      final away = _away;
+      _away = null;
+
+      if (away != null && DateTime.now().difference(away) >= _grace) {
+        _askAgain();
+      }
+    }
+  }
+
+  Future<void> _askAgain() async {
+    final lock = FingerprintLock.instance;
+
+    if (_asking || !lock.isOn || !_session.isSignedIn) {
+      return;
+    }
+
+    _asking = true;
+
+    try {
+      final proved = await lock.prove('افتح حسابك في مؤسسة منتصر');
+
+      if (!proved) {
+        _session.lockAway();
+        _basket.forget();
+      }
+    } finally {
+      _asking = false;
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _session.removeListener(_tellRouter);
     _basket.dispose();
     _session.dispose();
     super.dispose();

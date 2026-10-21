@@ -20,6 +20,7 @@ import '../features/orders/order_page.dart';
 import '../features/orders/orders_page.dart';
 import '../features/product/part_page.dart';
 import '../features/splash/splash_page.dart';
+import 'app_scope.dart';
 import 'routes.dart';
 import 'shell.dart';
 
@@ -50,6 +51,8 @@ abstract final class AppRouter {
   static final router = GoRouter(
     navigatorKey: _root,
     initialLocation: Path.splash,
+    redirect: _guard,
+    refreshListenable: AppScope.account,
     routes: [
       /*
        * Outside everything. `go` rather than `push` takes the app off it, so it
@@ -208,7 +211,8 @@ abstract final class AppRouter {
       GoRoute(
         parentNavigatorKey: _root,
         path: Path.signIn,
-        builder: (context, state) => const SignInPage(),
+        builder: (context, state) =>
+            SignInPage(from: state.uri.queryParameters['from']),
       ),
       GoRoute(
         parentNavigatorKey: _root,
@@ -217,4 +221,40 @@ abstract final class AppRouter {
       ),
     ],
   );
+
+  /// The screens that belong to an account.
+  ///
+  /// Browsing, the basket tab, the wish list tab and the account tab itself
+  /// stay open to anybody: each of those already says, in its own place, that
+  /// signing in is what it needs. These are the ones that only make sense for
+  /// somebody signed in — and that a link, a back button or a lock closing
+  /// underneath could otherwise land a guest on.
+  static bool _needsAccount(String path) =>
+      path == Path.checkout ||
+      path == Path.placed ||
+      path.startsWith('${Path.account}/');
+
+  /// Sends a guest who reaches one of them to sign in, and back afterwards.
+  ///
+  /// Not while the session is still waking: the splash has not yet asked the
+  /// server who the stored token belongs to, and a guard that answered first
+  /// would send a signed-in customer to the sign-in page. [AppScope.account]
+  /// runs this again the moment the answer arrives.
+  ///
+  /// The server still refuses these calls without a token; this is what
+  /// stops the screens being shown at all, not what protects the data.
+  static String? _guard(BuildContext context, GoRouterState state) {
+    final session = AppScope.session(context);
+
+    if (session.isWaking ||
+        session.isSignedIn ||
+        !_needsAccount(state.uri.path)) {
+      return null;
+    }
+
+    return Uri(
+      path: Path.signIn,
+      queryParameters: {'from': state.uri.toString()},
+    ).toString();
+  }
 }

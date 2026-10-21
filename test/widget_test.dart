@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,13 @@ void main() {
      * failure looks like a broken screen rather than a missing test double.
      */
     SharedPreferences.setMockInitialValues(<String, Object>{});
+
+    /*
+     * The token now lives in the platform's secure store. Without a stand-in
+     * its channel never answers under the test clock, and the splash waits on
+     * it for ever.
+     */
+    FlutterSecureStorage.setMockInitialValues(<String, String>{});
   });
 
   /// Open the app and wait out the splash.

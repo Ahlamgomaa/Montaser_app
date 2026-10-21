@@ -58,6 +58,7 @@ dependencies:
   http: ^1.6.0
   shared_preferences: ^2.5.5
   local_auth: ^3.0.2
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:
@@ -181,10 +182,23 @@ flutter_launcher_icons:
 # `android_12` is its own block because Android 12 changed how this works: the
 # system draws a circle of fixed size and ignores the old settings entirely.
 flutter_native_splash:
-  color: "#FFFFFF"
+  # The app's page colour in each theme (Palette.canvas / Palette.darkCanvas),
+  # so the system splash hands over to the in-app one without a change of
+  # background. The logo is transparent; in the dark theme its navy lettering
+  # would vanish, so splash_dark.png has "MONTASER" and the Arabic name in the
+  # logo's own orange instead.
+  color: "#F3F8F9"
   image: assets/brand/splash.png
+  color_dark: "#071316"
+  image_dark: assets/brand/splash_dark.png
   android: true
   ios: true
+  # Its own picture, because Android 12+ shows the splash image through a
+  # circle two-thirds as wide as the image: splash.png runs to its corners, and
+  # the circle cut "MONTASER" and the Arabic name off. This is the same logo on
+  # a 1152 px canvas, inside the 768 px circle Android keeps.
   android_12:
-    color: "#FFFFFF"
-    image: assets/brand/splash.png
+    color: "#F3F8F9"
+    image: assets/brand/splash_android12.png
+    color_dark: "#071316"
+    image_dark: assets/brand/splash_android12_dark.png

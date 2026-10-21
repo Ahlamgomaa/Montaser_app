@@ -173,6 +173,18 @@ class _ReviewSheetState extends State<ReviewSheet> {
           _fault = fault.message;
         });
       }
+    } catch (error, stack) {
+      /* Anything else used to leave the button on "sending" for good. */
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stack, library: 'review'),
+      );
+
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _fault = 'تعذّر إرسال تقييمك. حاول مرة أخرى.';
+        });
+      }
     }
   }
 }

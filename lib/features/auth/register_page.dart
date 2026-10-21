@@ -333,6 +333,26 @@ class _RegisterPageState extends State<RegisterPage> {
       }
 
       return;
+    } catch (error, stack) {
+      /*
+       * Anything else. The button used to stay spinning for good. The account
+       * may already exist — the fault can come after the server said yes — so
+       * the message points at signing in rather than at registering again.
+       */
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'register',
+        ),
+      );
+
+      if (mounted) {
+        setState(() => _working = false);
+        _say('تعذّر إكمال التسجيل. إن كان حسابك قد أُنشئ فسجّل الدخول برقمك.');
+      }
+
+      return;
     }
 
     if (!mounted) {

@@ -10,7 +10,14 @@
     -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+        Not backed up. The sign-in token lives in flutter_secure_storage, whose
+        key stays in this handset's Keystore: restored onto another phone the
+        data cannot be decrypted (InvalidKeyException), and backed up at all it
+        is a copy of the account sitting in somebody's cloud.
+    -->
     <application
+        android:allowBackup="false"
         android:label="مؤسسة منتصر"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

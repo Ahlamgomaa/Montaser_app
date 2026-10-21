@@ -9,6 +9,7 @@ import '../../core/theme/palette.dart';
 import '../../core/widgets/app_field.dart';
 import '../../data/api/api_failure.dart';
 import '../../data/store/fingerprint_lock.dart';
+import '../../data/store/identity_store.dart';
 import 'widgets/auth_crown.dart';
 
 /// Signing in.
@@ -19,7 +20,26 @@ import 'widgets/auth_crown.dart';
 /// and keeping them visibly separate means the eye lands on the work rather
 /// than on the decoration.
 class SignInPage extends StatefulWidget {
-  const SignInPage({super.key});
+  const SignInPage({this.from, super.key});
+
+  /// Where the customer was going when they were sent here to sign in.
+  ///
+  /// Set by the router's guard. Signing in carries on to it rather than
+  /// dropping them on the account tab and leaving them to find the checkout
+  /// again.
+  final String? from;
+
+  /// Where to go once signed in: [from] when it is one of this app's own
+  /// paths, otherwise back, otherwise the account tab.
+  static void onwards(GoRouter router, String? from, {required bool canPop}) {
+    if (from != null && from.startsWith('/') && !from.startsWith('//')) {
+      router.go(from);
+    } else if (canPop) {
+      router.pop();
+    } else {
+      router.go(Path.account);
+    }
+  }
 
   @override
   State<SignInPage> createState() => _SignInPageState();
@@ -135,8 +155,7 @@ class _SignInPageState extends State<SignInPage> {
                               Align(
                                 alignment: AlignmentDirectional.centerStart,
                                 child: TextButton(
-                                  onPressed: () =>
-                                      _say('أرسلنا رسالة بها رابط الاستعادة.'),
+                                  onPressed: _forgot,
                                   child: const Text('نسيت كلمة المرور؟'),
                                 ),
                               ),
@@ -166,7 +185,7 @@ class _SignInPageState extends State<SignInPage> {
 
                   const _OrRule(),
                   Gap.h16,
-                  const _Alternatives(),
+                  _Alternatives(from: widget.from),
                   Gap.h24,
                   _NewHere(),
                   Gap.h24,
@@ -213,6 +232,22 @@ class _SignInPageState extends State<SignInPage> {
       ..showSnackBar(SnackBar(content: Text(what)));
   }
 
+  /// What to do about a forgotten password, said honestly.
+  ///
+  /// This used to say a reset link had been sent, and sent nothing: the API
+  /// this app talks to has no password-reset call. Until it does, the shop
+  /// resets it — so this says so, with the number to ring when the shop has
+  /// published one.
+  void _forgot() {
+    final phone = ShopBadge.instance.phone;
+
+    _say(
+      phone.isEmpty
+          ? 'لاستعادة كلمة المرور تواصل مع المتجر.'
+          : 'لاستعادة كلمة المرور تواصل مع المتجر على $phone.',
+    );
+  }
+
   Future<void> _signIn() async {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
@@ -241,6 +276,22 @@ class _SignInPageState extends State<SignInPage> {
       }
 
       return;
+    } catch (error, stack) {
+      /*
+       * Anything else — a reply of the wrong shape, a platform fault. Without
+       * this the button stayed spinning for good. Reported, and the customer
+       * gets the button back.
+       */
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stack, library: 'sign in'),
+      );
+
+      if (mounted) {
+        setState(() => _working = false);
+        _say('تعذّر تسجيل الدخول. حاول مرة أخرى.');
+      }
+
+      return;
     }
 
     if (!mounted) {
@@ -249,7 +300,7 @@ class _SignInPageState extends State<SignInPage> {
 
     setState(() => _working = false);
 
-    canPop ? router.pop() : router.go(Path.account);
+    SignInPage.onwards(router, widget.from, canPop: canPop);
   }
 }
 
@@ -294,7 +345,9 @@ class _OrRule extends StatelessWidget {
 /// has enrolled a finger, and there is a session on it to unlock. Offered on a
 /// phone with none of that, it is the same empty promise in a different shape.
 class _Alternatives extends StatefulWidget {
-  const _Alternatives();
+  const _Alternatives({this.from});
+
+  final String? from;
 
   @override
   State<_Alternatives> createState() => _AlternativesState();
@@ -337,8 +390,8 @@ class _AlternativesState extends State<_Alternatives> {
 
   /// Open the account this handset already holds.
   ///
-  /// Nothing is sent anywhere: the token never left storage, and what the
-  /// fingerprint decides is whether this screen hands it back to the app.
+  /// Nothing about the fingerprint is sent anywhere: the token never left
+  /// storage, and what the fingerprint decides is whether it is sent again.
   Future<void> _unlock() async {
     final proved = await FingerprintLock.instance.prove(
       'افتح حسابك في مؤسسة منتصر',
@@ -352,7 +405,7 @@ class _AlternativesState extends State<_Alternatives> {
     final router = GoRouter.of(context);
     final canPop = context.canPop();
 
-    await session.wake();
+    await session.unlock();
 
     if (!mounted) {
       return;
@@ -362,7 +415,7 @@ class _AlternativesState extends State<_Alternatives> {
       /* The basket that was put away with the account, brought back with it. */
       AppScope.basket(context).load(force: true).catchError((Object _) {});
 
-      canPop ? router.pop() : router.go(Path.account);
+      SignInPage.onwards(router, widget.from, canPop: canPop);
 
       return;
     }
