@@ -10,6 +10,7 @@ import '../../core/theme/dimens.dart';
 import '../../core/theme/palette.dart';
 import '../../core/widgets/brand_mark.dart';
 import '../../data/api/api_config.dart';
+import '../../data/api/token_store.dart';
 
 /// The first screen, and the only one that does real work before the shop.
 ///
@@ -71,11 +72,19 @@ class _SplashPageState extends State<SplashPage>
     /*
      * Both at once. The waking is network-bound and the wait is not, so running
      * them in parallel costs whichever is longer rather than their sum.
+     *
+     * And the shop opens whatever the waking did. It used to wait on it with
+     * nothing to catch a fault it did not expect — a reply of the wrong shape,
+     * a platform refusing — and the splash then stayed up for good. The fault
+     * is reported rather than swallowed; the customer is not held behind it.
      */
-    await Future.wait([
-      _waken(),
-      Future<void>.delayed(SplashPage._atLeast),
-    ]);
+    try {
+      await Future.wait([_waken(), Future<void>.delayed(SplashPage._atLeast)]);
+    } catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stack, library: 'splash'),
+      );
+    }
 
     if (mounted) {
       context.go(Path.home);
@@ -85,25 +94,19 @@ class _SplashPageState extends State<SplashPage>
   Future<void> _waken() async {
     final session = AppScope.session(context);
 
-    await session.wake();
-
-    if (!mounted || !session.isSignedIn) {
-      return;
-    }
-
     /*
      * The lock on the handset, where the customer asked for one.
      *
-     * Asked here rather than on a screen of its own: this is the moment the
-     * app is about to show somebody's addresses and their orders, and it is
-     * the only moment worth asking at.
+     * Asked before the account is woken rather than after it. Asked after,
+     * the app had already fetched this person's addresses and wish list with
+     * their token by the time the fingerprint was refused.
      *
-     * A refusal signs nobody out. The token is still good and the shop is
-     * still open — what the fingerprint decides is whether *this* handset
+     * A refusal signs nobody out. The token is kept but not sent, and the shop
+     * is still open — what the fingerprint decides is whether *this* handset
      * hands over the account, so a wrong finger drops back to browsing rather
      * than to a password prompt for an account that was never in doubt.
      */
-    if (FingerprintLock.instance.isOn) {
+    if (FingerprintLock.instance.isOn && TokenStore.instance.hasToken) {
       final proved = await FingerprintLock.instance.prove(
         'افتح حسابك في مؤسسة منتصر',
       );
@@ -115,7 +118,9 @@ class _SplashPageState extends State<SplashPage>
       }
     }
 
-    if (!mounted) {
+    await session.wake();
+
+    if (!mounted || !session.isSignedIn) {
       return;
     }
 

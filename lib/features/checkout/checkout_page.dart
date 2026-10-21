@@ -283,10 +283,61 @@ class _CheckoutPageState extends State<CheckoutPage> {
         setState(() => _placing = false);
       }
 
-      messenger
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(fault.message)));
+      /*
+       * A timeout is the one refusal that is not a refusal: the order may have
+       * been written and only the answer lost. Saying "try again" there invites
+       * a second order, so the customer is sent to check first.
+       */
+      if (fault.kind == FailureKind.timeout) {
+        _unsure(messenger);
+      } else {
+        messenger
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(fault.message)));
+      }
+    } catch (error, stack) {
+      /*
+       * Anything that is not the server refusing — most likely an answer the
+       * app could not read. The server may well have taken the order, so this
+       * neither claims success nor invites a second order. It used to leave the
+       * button disabled for good, with the basket still showing.
+       */
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'checkout',
+        ),
+      );
+
+      if (mounted) {
+        setState(() => _placing = false);
+      }
+
+      _unsure(messenger);
     }
+  }
+
+  /// When nobody knows whether the order went through.
+  ///
+  /// The basket is read again — the server empties it when it writes an
+  /// order — and the customer is told to look at their orders before trying
+  /// again. No retry is made here: placing an order twice is worse than asking.
+  void _unsure(ScaffoldMessengerState messenger) {
+    if (mounted) {
+      AppScope.basket(context).load(force: true).catchError((Object _) {});
+    }
+
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text(
+            'لم نتأكد من تسجيل طلبك. راجع «طلباتي» قبل المحاولة مرة أخرى.',
+          ),
+          duration: Duration(seconds: 6),
+        ),
+      );
   }
 }
 

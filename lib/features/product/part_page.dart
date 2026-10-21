@@ -476,6 +476,13 @@ class _BuyBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.palette;
 
+    /*
+     * Held while the basket is answering. Two quick taps used to send the
+     * whole quantity twice, and the basket came back with double what the
+     * customer chose.
+     */
+    final busy = AppScope.basketOf(context).isBusy;
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         Gap.lg,
@@ -539,7 +546,7 @@ class _BuyBar extends StatelessWidget {
                 Gap.w12,
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => _addToBasket(context),
+                    onPressed: busy ? null : () => _addToBasket(context),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
                     ),

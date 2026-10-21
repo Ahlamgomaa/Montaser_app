@@ -86,22 +86,34 @@ class SessionStore extends ChangeNotifier {
 
   /// Put the account away without ending it.
   ///
-  /// For a handset whose fingerprint was not given. The token is untouched and
-  /// the shop is still open to browse — what is withheld is this person's own
-  /// corner of it, which is the whole of what the lock was asked to protect.
+  /// For a handset whose fingerprint was not given. The token is kept but no
+  /// longer sent: every call goes out signed out until the lock is opened, so
+  /// no screen — the wish list, the basket, a checkout reached by a link — can
+  /// show or act on this person's account in the meantime. Hiding the profile
+  /// alone was not a lock; the token was still being sent on every request.
   ///
   /// Different from signing out in the one way that matters: nothing is
-  /// revoked, so putting a finger on the sensor next launch is all it takes.
+  /// revoked, so putting a finger on the sensor is all it takes to come back.
   void lockAway() {
-    if (_shopper == null) {
-      return;
-    }
+    _tokens.withhold();
 
+    /*
+     * The splash locks before it wakes, so this can be the end of waking: the
+     * answer, for now, is "nobody".
+     */
+    _waking = false;
     _shopper = null;
     _book = AddressBook.empty;
     _kept.clear();
 
     notifyListeners();
+  }
+
+  /// Open the lock — the fingerprint was given — and wake the session again.
+  Future<void> unlock() async {
+    _tokens.release();
+
+    await wake();
   }
 
   /// Find out whether the stored token still means anything.
@@ -139,6 +151,13 @@ class SessionStore extends ChangeNotifier {
        */
       if (fault.kind == FailureKind.unauthenticated) {
         _forget();
+
+        /*
+         * And the token goes with it. Kept, it was sent on every later
+         * request — the catalogue included — and asked about again on every
+         * launch, for an answer that was already no.
+         */
+        await _tokens.drop();
       }
     } finally {
       _waking = false;
@@ -152,7 +171,7 @@ class SessionStore extends ChangeNotifier {
   }) async {
     _shopper = await _auth.signIn(phone: phone, password: password);
     _refused = false;
-    await _loadOwn();
+    await _loadOwnQuietly();
     notifyListeners();
     onSignedIn?.call();
 
@@ -176,7 +195,7 @@ class SessionStore extends ChangeNotifier {
       company: company,
     );
 
-    await _loadOwn();
+    await _loadOwnQuietly();
     notifyListeners();
     onSignedIn?.call();
 
@@ -306,6 +325,20 @@ class SessionStore extends ChangeNotifier {
         (parts) => _kept = parts.map((part) => part.id).toSet(),
       ),
     ]);
+  }
+
+  /// The same, after signing in or registering, where it must not undo either.
+  ///
+  /// By the time this runs the server has accepted the customer and the token
+  /// is stored: they are signed in. A failure to fetch their addresses or wish
+  /// list used to surface as a failed sign-in — an error on screen for an
+  /// account that was in fact open. Those screens fetch again when opened.
+  Future<void> _loadOwnQuietly() async {
+    try {
+      await _loadOwn();
+    } on ApiFailure {
+      /* Left for the address book and the wish list to ask again. */
+    }
   }
 
   void _forget() {

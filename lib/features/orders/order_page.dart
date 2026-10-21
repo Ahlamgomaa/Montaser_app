@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/routes.dart';
@@ -97,8 +98,18 @@ class _Order extends StatelessWidget {
             actions: [
               CrownAction(
                 glyph: Icons.copy_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context)
+                /*
+                 * Copied for real. This used to say "copied" and put nothing
+                 * on the clipboard.
+                 */
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  await Clipboard.setData(
+                    ClipboardData(text: order.reference),
+                  );
+
+                  messenger
                     ..clearSnackBars()
                     ..showSnackBar(
                       const SnackBar(content: Text('نُسخ رقم الطلب.')),

@@ -45,7 +45,7 @@ class VerdictList extends StatelessWidget {
           ],
           for (final one in verdicts) ...[_VerdictCard(verdict: one), Gap.h12],
           OutlinedButton.icon(
-            onPressed: () => _write(context),
+            onPressed: () => _write(context, itemId),
             icon: const Icon(Icons.rate_review_outlined, size: 18),
             label: const Text('اكتب تقييمك'),
           ),
@@ -61,15 +61,14 @@ class VerdictList extends StatelessWidget {
 /// publishing — it is a setting on the website — so adding it to the list would
 /// show the customer something nobody else can see, and they would wonder later
 /// why it had vanished.
-Future<void> _write(BuildContext context) async {
+///
+/// The part is handed in. It used to be looked up as an ancestor of the
+/// [VerdictList]'s own context — but that lookup starts above the widget it is
+/// called from, never found the list, and the sheet never opened.
+Future<void> _write(BuildContext context, int itemId) async {
   final messenger = ScaffoldMessenger.of(context);
-  final list = context.findAncestorWidgetOfExactType<VerdictList>();
 
-  if (list == null) {
-    return;
-  }
-
-  final said = await ReviewSheet.open(context, itemId: list.itemId);
+  final said = await ReviewSheet.open(context, itemId: itemId);
 
   if (said == null) {
     return;
